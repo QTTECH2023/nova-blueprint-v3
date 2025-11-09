@@ -64,6 +64,7 @@ def iterative_sampling_loop(
         bt.logging.info(f"[Miner] Iteration {iteration}: sampling {n_samples} molecules")
 
         sampler_data = run_sampler(n_samples=n_samples, 
+                        seed = int.from_bytes(os.urandom(4), 'big'),
                         subnet_config=config, 
                         output_path=sampler_file_path,
                         save_to_file=True,
