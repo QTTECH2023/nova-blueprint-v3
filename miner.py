@@ -104,10 +104,10 @@ def iterative_sampling_loop(
                 bt.logging.warning(f"{len(names) - len(filtered_names)} molecules were previously seen; continuing with unseen only")
 
             dup_ratio = (len(names) - len(filtered_names)) / max(1, len(names))
-            if dup_ratio > 0.59:
+            if dup_ratio > 0.5:
                 mutation_prob = min(0.5, mutation_prob * 1.5)
                 elite_frac = max(0.2, elite_frac * 0.8)
-            elif dup_ratio < 0.19 and not top_pool.empty:
+            elif dup_ratio < 0.3 and not top_pool.empty:
                 mutation_prob = max(0.05, mutation_prob * 0.9)
                 elite_frac = min(0.8, elite_frac * 1.1)
 
