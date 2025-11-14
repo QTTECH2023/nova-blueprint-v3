@@ -9,8 +9,7 @@ from rdkit.Chem import Descriptors
 
 from nova_ph2.utils import (
     get_smiles, 
-    get_heavy_atom_count, 
-    compute_maccs_entropy
+    get_heavy_atom_count
 )
 
 def validate_molecules_sampler(
