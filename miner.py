@@ -3,8 +3,6 @@ os.environ['CUBLAS_WORKSPACE_CONFIG'] = ':4096:8'
 
 import sys
 import json
-import traceback
-import time
 
 import bittensor as bt
 import pandas as pd
@@ -19,7 +17,6 @@ sys.path.append(PARENT_DIR)
 OUTPUT_DIR = os.environ.get("OUTPUT_DIR", "/output")
 
 from nova_ph2.neurons.validator.scoring import score_molecules_json
-import nova_ph2.neurons.validator.scoring as scoring_module
 from random_sampler import run_sampler
 from nova_ph2.combinatorial_db.reactions import get_smiles_from_reaction
 
@@ -62,7 +59,7 @@ def iterative_sampling_loop(
         bt.logging.info(f"[Miner] Iteration {iteration}: sampling {n_samples} molecules")
 
         sampler_data = run_sampler(
-                        n_samples=n_samples*4 if iteration == 1 else n_samples, 
+                        n_samples=n_samples*4, 
                         subnet_config=config, 
                         output_path=sampler_file_path,
                         save_to_file=True,
