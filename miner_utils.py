@@ -1,5 +1,6 @@
 import sys
 import os
+from functools import lru_cache
 
 PARENT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 sys.path.append(PARENT_DIR)
@@ -7,27 +8,13 @@ sys.path.append(PARENT_DIR)
 from rdkit import Chem
 from rdkit.Chem import Descriptors
 
-from nova_ph2.utils import (
-    get_smiles, 
-    get_heavy_atom_count
-)
+from nova_ph2.utils import get_heavy_atom_count
+from nova_ph2.combinatorial_db.reactions import get_smiles_from_reaction
 
 def validate_molecules_sampler(
-    sampler_data: dict[int, dict[str, list]],
+    sampler_data: dict,
     config: dict,
-) -> dict[int, dict[str, list[str]]]:
-    """
-    Validates molecules for all random sampler (uid=0).    
-    Doesn't interrupt the process if a molecule is invalid, removes it from the list instead. 
-    Doesn't check allowed reactions, chemically identical, duplicates, uniqueness (handled in random_sampler.py)
-    
-    Args:
-        uid_to_data: Dictionary mapping UIDs to their data including molecules
-        config: Configuration dictionary containing validation parameters
-        
-    Returns:
-        Dictionary mapping UIDs to their list of valid SMILES strings
-    """
+) -> tuple[list[str], list[str]]:
     
     molecules = sampler_data["molecules"]
 
@@ -39,7 +26,7 @@ def validate_molecules_sampler(
             if molecule is None:
                 continue
             
-            smiles = get_smiles(molecule)
+            smiles = get_smiles_from_reaction_cached(molecule)
             if not smiles:
                 continue
             
@@ -47,9 +34,8 @@ def validate_molecules_sampler(
                 continue
 
             try:    
-                mol = Chem.MolFromSmiles(smiles)
-                num_rotatable_bonds = Descriptors.NumRotatableBonds(mol)
-                if num_rotatable_bonds < config['min_rotatable_bonds'] or num_rotatable_bonds > config['max_rotatable_bonds']:
+                num_rotatable_bonds = rotatable_bonds_cached(smiles)
+                if num_rotatable_bonds < config['min_rotatable_bonds'] or num_rotatable_bonds > config['max_rotatable_bonds'] or num_rotatable_bonds is None:
                     continue
             except Exception as e:
                 continue
@@ -60,3 +46,27 @@ def validate_molecules_sampler(
             continue
         
     return valid_names, valid_smiles
+
+@lru_cache(maxsize=200_000)
+def get_smiles_from_reaction_cached(name: str) -> str | None:
+    try:
+        return get_smiles_from_reaction(name)
+    except Exception:
+        return None
+
+@lru_cache(maxsize=200_000)
+def mol_from_smiles_cached(s: str):
+    try:
+        return Chem.MolFromSmiles(s)
+    except Exception:
+        return None
+
+@lru_cache(maxsize=200_000)
+def rotatable_bonds_cached(s: str) -> int | None:
+    mol = mol_from_smiles_cached(s)
+    if mol is None:
+        return None
+    try:
+        return Descriptors.NumRotatableBonds(mol)
+    except Exception:
+        return None
